@@ -9,13 +9,18 @@
   Pendências:
   * botão C trava o braço quando apertado uma vez, destrava quando apertado novamente.
   * modo demo fazendo alguma coisa.
-  * utilizar conceito de coordenadas? https://github.com/yorkhackspace/meArm
+  * utilizar conceito de coordenadas.
 
   Observações:
   * O Nunchuk parece funcionar mais estável quando alimentado em 3.3V no Arduino Nano.
 
   Informações técnicas:
   * http://wiibrew.org/wiki/Wiimote/Extension_Controllers/Nunchuck
+  
+  Referências:
+  * http://learn.mime.co.uk/assets/docs/control-your-mearm-from-arduino/MeArm_v1.0_Manual_for_Arduino_v1.0.pdf
+  * https://github.com/yorkhackspace/meArm
+  * https://github.com/wayneandlayne/Video-Game-Shield
 
  */
 #include <Wire.h>
