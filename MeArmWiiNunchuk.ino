@@ -22,10 +22,10 @@
 #include <Servo.h>
 #include "WiiNunchuk.h"
 
-#define SERVO_BASE_PIN 4
-#define SERVO_DISTANCIA_PIN 5
-#define SERVO_ALTURA_PIN 6
-#define SERVO_GARRA_PIN 7
+#define SERVO_BASE_PIN 3
+#define SERVO_DISTANCIA_PIN 6
+#define SERVO_ALTURA_PIN 9
+#define SERVO_GARRA_PIN 12
 
 #define NUNCHUK_JOY_X_MIN 20
 #define NUNCHUK_JOY_X_CENTRO 127
@@ -47,6 +47,12 @@
 
 #define AMOSTRAS SERVO_MIN_ATUALIZACAO
 
+unsigned long joyxTotal = 0;
+uint8_t joyx[AMOSTRAS];
+
+unsigned long joyyTotal = 0;
+uint8_t joyy[AMOSTRAS];
+
 unsigned long accyTotal = 0;
 uint16_t accy[AMOSTRAS];
 
@@ -56,13 +62,19 @@ Servo servoBase, servoDistancia, servoAltura, servoGarra;
 
 unsigned long tempoAnterior = 0;
 
-void setup() {
+void setup() {  
   Serial.begin(115200);
   Serial.println();
   Serial.println("*** MeArm ***");
 
   for (int i = 0; i < AMOSTRAS; i++) {
-    accy[i] = 512;
+    joyx[i] = NUNCHUK_JOY_X_CENTRO;
+    joyxTotal += joyx[i];
+    
+    joyy[i] = NUNCHUK_JOY_Y_CENTRO;
+    joyyTotal += joyy[i];
+    
+    accy[i] = NUNCHUK_ACC_Y_CENTRO;
     accyTotal += accy[i];
   }
 
@@ -73,28 +85,35 @@ void setup() {
   servoAltura.attach(SERVO_ALTURA_PIN);
   servoGarra.attach(SERVO_GARRA_PIN);
 
-  servoBase.write(90);
-  servoDistancia.write(90);
-  servoAltura.write(135);
-  servoGarra.write(90);
+  // Posição de descanso caso o Nunchuk não esteja conectado.
+  servoBase.write(80);
+  servoDistancia.write(60);
+  servoAltura.write(60);
+  servoGarra.write(5);
 }
 
 void loop() {
   if (nunchuk_get_data()) {
-    uint8_t joyx = nunchuk_joyx();
+    joyxTotal = joyxTotal - joyx[indiceAmostra];
+    joyx[indiceAmostra] = nunchuk_joyx();
+    joyxTotal = joyxTotal + joyx[indiceAmostra];
+    unsigned long joyxAverage = joyxTotal / AMOSTRAS;
     int servoBaseAngulo;
-    if (joyx >= NUNCHUK_JOY_X_CENTRO) {
-      servoBaseAngulo = max(map(joyx, NUNCHUK_JOY_X_CENTRO, NUNCHUK_JOY_X_MAX, 90, 0), 0);
+    if (joyxAverage >= NUNCHUK_JOY_X_CENTRO) {
+      servoBaseAngulo = max(map(joyxAverage, NUNCHUK_JOY_X_CENTRO, NUNCHUK_JOY_X_MAX, 80, 10), 10);
     } else {
-      servoBaseAngulo = min(map(joyx, NUNCHUK_JOY_X_MIN, NUNCHUK_JOY_X_CENTRO, 180, 90), 180);
+      servoBaseAngulo = min(map(joyxAverage, NUNCHUK_JOY_X_MIN, NUNCHUK_JOY_X_CENTRO, 165, 80), 165);
     }
 
-    uint8_t joyy = nunchuk_joyy();
+    joyyTotal = joyyTotal - joyy[indiceAmostra];
+    joyy[indiceAmostra] = nunchuk_joyy();
+    joyyTotal = joyyTotal + joyy[indiceAmostra];
+    unsigned long joyyAverage = joyyTotal / AMOSTRAS;
     int servoDistanciaAngulo;
-    if (joyy >= NUNCHUK_JOY_Y_CENTRO) {
-      servoDistanciaAngulo = min(map(joyy, NUNCHUK_JOY_Y_CENTRO, NUNCHUK_JOY_Y_MAX, 90, 180), 180);
+    if (joyyAverage >= NUNCHUK_JOY_Y_CENTRO) {
+      servoDistanciaAngulo = min(map(joyyAverage, NUNCHUK_JOY_Y_CENTRO, NUNCHUK_JOY_Y_MAX, 60, 150), 150);
     } else {
-      servoDistanciaAngulo = max(map(joyy, NUNCHUK_JOY_Y_MIN, NUNCHUK_JOY_Y_CENTRO, 0, 90), 00);
+      servoDistanciaAngulo = max(map(joyyAverage, NUNCHUK_JOY_Y_MIN, NUNCHUK_JOY_Y_CENTRO, 20, 60), 20);
     }
 
     accyTotal = accyTotal - accy[indiceAmostra];
@@ -103,9 +122,9 @@ void loop() {
     unsigned long accyAverage = accyTotal / AMOSTRAS;
     int servoAlturaAngulo;
     if (accyAverage >= NUNCHUK_ACC_Y_CENTRO) {
-      servoAlturaAngulo = min(map(accyAverage, NUNCHUK_ACC_Y_CENTRO, NUNCHUK_ACC_Y_MAX, 90, 180), 180);
+      servoAlturaAngulo = max(map(accyAverage, NUNCHUK_ACC_Y_CENTRO, NUNCHUK_ACC_Y_MAX, 90, 60), 60);
     } else {
-      servoAlturaAngulo = max(map(accyAverage, NUNCHUK_ACC_Y_MIN, NUNCHUK_ACC_Y_CENTRO, 0, 90), 00);
+      servoAlturaAngulo = min(map(accyAverage, NUNCHUK_ACC_Y_MIN, NUNCHUK_ACC_Y_CENTRO, 165, 90), 165);
     }
 
     indiceAmostra += 1;
@@ -116,9 +135,9 @@ void loop() {
     bool zbut = nunchuk_zbutton();
     int servoGarraAngulo;
     if (zbut) {
-      servoGarraAngulo = 90;
+      servoGarraAngulo = 80;
     } else {
-      servoGarraAngulo = 0;
+      servoGarraAngulo = 5;
     }
 
     unsigned long tempoAtual = millis();
@@ -134,10 +153,10 @@ void loop() {
     // Informações para depuração.
     Serial.print(tempoAtual); Serial.print(" ms");
 
-    Serial.print(" | Joy.X / Base: "); Serial.print(joyx);
+    Serial.print(" | Joy.X / Base: "); Serial.print(joyxAverage);
     Serial.print(" / "); Serial.print(servoBaseAngulo); Serial.print("°");
 
-    Serial.print(" | Joy.Y / Distância: "); Serial.print(joyy);
+    Serial.print(" | Joy.Y / Distância: "); Serial.print(joyyAverage);
     Serial.print(" / "); Serial.print(servoDistanciaAngulo); Serial.print("°");
 
     Serial.print(" | Ac.Y / Altura: "); Serial.print(accyAverage);
