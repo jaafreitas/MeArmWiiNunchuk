@@ -25,12 +25,25 @@ static void nunchuk_setpowerpins() {
 
 // Initialize the I2C system, join the I2C bus,
 // and tell the Nunchuk we're talking to it.
-static void nunchuk_init() {
+static void nunchuk_init(bool encrypted = false) {
   Wire.begin();
-  Wire.beginTransmission(NUNCHUK_ADDRESS);
-  Wire.write((uint8_t)0x40);
-  Wire.write((uint8_t)0x00);
-  Wire.endTransmission();
+  if (encrypted) {
+    Wire.beginTransmission(NUNCHUK_ADDRESS);
+    Wire.write((uint8_t)0x40);
+    Wire.write((uint8_t)0x00);
+    Wire.endTransmission();
+  }
+  else {
+    Wire.beginTransmission(NUNCHUK_ADDRESS);
+    Wire.write((uint8_t)0xF0);
+    Wire.write((uint8_t)0x55);
+    Wire.endTransmission();
+
+    Wire.beginTransmission(NUNCHUK_ADDRESS);
+    Wire.write((uint8_t)0xFB);
+    Wire.write((uint8_t)0x00);
+    Wire.endTransmission();
+  }
 }
 
 // Send a request for data to the nunchuk.
@@ -42,8 +55,10 @@ static void nunchuk_send_request() {
 
 // Encode data to format that most wiimote drivers except
 // only needed if you use one of the regular wiimote drivers
-static char nunchuk_decode_byte (char x) {
-  x = (x ^ 0x17) + 0x17;
+static char nunchuk_decode_byte (char x, bool encrypted = false) {
+  if (encrypted) {
+    x = (x ^ 0x17) + 0x17;
+  }
   return x;
 }
 
@@ -62,13 +77,13 @@ static bool nunchuk_get_data() {
   return (cnt >= 5);
 }
 
-// Returns ZButton state: 
+// Returns ZButton state:
 // True = pressed; False = notpressed
 static bool nunchuk_zbutton() {
   return ((nunchuk_buf[5] >> 0) & 1) ? 0 : 1;
 }
 
-// Returns CButton state: 
+// Returns CButton state:
 // True = pressed; False = notpressed
 static bool nunchuk_cbutton() {
   return ((nunchuk_buf[5] >> 1) & 1) ? 0 : 1;
