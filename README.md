@@ -3,6 +3,18 @@ Braço robótico controlado por Wii Nunchuk.
 
 [![Demo](https://img.youtube.com/vi/jlldPF6MW5M/0.jpg)](https://youtu.be/jlldPF6MW5M)
 
+### Lista de materiais
+* 1 kit braço robótico meArm
+* 1 Arduino Nano
+* 1 Placa Shield de Expansão para Arduino Nano
+* 4 micro servos 9g SG90
+* 1 Wii Nunchuk
+* 1 Cabo USB compatível com o Arduino Nano
+* 3 Jumpers macho-fêmea
+
+### Código fonte
+* [https://github.com/jaafreitas/MeArmWiiNunchuk](https://github.com/jaafreitas/MeArmWiiNunchuk)
+
 ### Intruções
 * Joystick X movimenta a base.
 * Joystick Y movimenta a distância.
